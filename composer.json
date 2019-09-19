@@ -1,6 +1,6 @@
 {
     "name": "punchout-catalogs/secured-wall",
-    "description": "Punchout Catalog Secure Wall",
+    "description": "Punchout Catalogs Secure Wall",
     "version": "1.0.0",
     "require": {
         "php": ">=7.1",
