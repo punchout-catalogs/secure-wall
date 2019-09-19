@@ -179,6 +179,8 @@ class Client
      */
     protected function write(string $id, string $value)
     {
+        $id = $this->toId($id);
+        
         $sql = sprintf("INSERT INTO `%s` (`id`, `value`)", $this->table)
         . " VALUES (:id, :value)"
         . " ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)";
@@ -193,6 +195,8 @@ class Client
      */
     protected function read(string $id)
     {
+        $id = $this->toId($id);
+        
         /** @var \Illuminate\Support\Collection $result */
         $result = $this->getConnection()->Table($this->table)
             ->select('value')
@@ -203,6 +207,11 @@ class Client
         $result = $result->first();
 
         return (null !== $result) ? $result : null;
+    }
+    
+    protected function toId(string $id)
+    {
+        return md5(trim($id));
     }
     
     protected function getConnection()

@@ -11,7 +11,7 @@ Composer dependencies:
 Table to create:
 ```
 CREATE TABLE `secured_wall` (
-  `id` varchar(255) NOT NULL COMMENT 'id',
+  `id` varchar(32) NOT NULL COMMENT 'id',
   `value` text NOT NULL COMMENT 'value',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created_at',
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated_at',
