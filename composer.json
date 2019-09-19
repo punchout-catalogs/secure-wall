@@ -1,7 +1,7 @@
 {
     "name": "punchout-catalogs/secured-wall",
     "description": "Punchout Catalog Secure Wall",
-    "license": "proprietary",
+    "version": "1.0.0",
     "require": {
         "php": ">=7.1",
         "illuminate/database": "5.7.*"
@@ -11,6 +11,6 @@
             "PunchoutCatalog\\SecuredWall\\": "src/PunchoutCatalog/SecuredWall"
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true
 }
