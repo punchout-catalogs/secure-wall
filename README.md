@@ -1,7 +1,10 @@
 Require:
+```
 "illuminate/database": "5.7.*",
+```
 
 Table to create:
+```
 CREATE TABLE `secured_wall` (
   `id` varchar(255) NOT NULL COMMENT 'id',
   `value` text NOT NULL COMMENT 'value',
@@ -9,11 +12,14 @@ CREATE TABLE `secured_wall` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated_at',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Punchout Vault Table';
+```
 
 PHP Example:
+```
 require_once __DIR__ . '/../vendor/autoload.php';
 
 $key = md5('abrakadabra');
+
 $client = \PunchoutCatalog\SecuredWall\Client::getInstance(
 $key,
 [
@@ -47,3 +53,4 @@ try {
 } catch (\PunchoutCatalog\SecuredWall\Exception $e) {
     var_dump($e->getMessage());
 }
+```
