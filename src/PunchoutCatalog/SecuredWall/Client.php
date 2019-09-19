@@ -99,7 +99,7 @@ class Client
     protected function initDb()
     {
         $this->db = new ManagerDB();
-        $this->db->addConnection($this->dbConfig);
+        $this->db->addConnection($this->dbConfig, 'poc_secure_wall');
         //$capsule->setAsGlobal();
         $this->db->bootEloquent();
         return $this;
@@ -216,7 +216,7 @@ class Client
     
     protected function getConnection()
     {
-        return $this->db->getConnection();
+        return $this->db->getConnection('poc_secure_wall');
     }
     
     protected function encode($value)
