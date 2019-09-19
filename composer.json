@@ -3,7 +3,8 @@
     "description": "Punchout Catalog Secure Wall",
     "license": "proprietary",
     "require": {
-        "php": ">=7.1"
+        "php": ">=7.1",
+        "illuminate/database": "5.7.*"
     },
     "autoload": {
         "psr-4": {

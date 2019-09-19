@@ -38,6 +38,7 @@ class Client
         }
         
         $value = json_encode($value);
+        
         return $this->write($id, $value);
     }
     
@@ -54,6 +55,7 @@ class Client
         }
         
         $value = $this->read($id);
+        
         $value = json_decode($value, true);
         
         if ((false === $value) || ('' === $value) || (null === $value)) {
