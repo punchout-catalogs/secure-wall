@@ -1,10 +1,9 @@
-/.buildpath
+vendor
+composer.lock
 /.cache
 /.metadata
 /.project
 /.settings
-/.vscode
-atlassian*
 /.idea
 /.gitattributes
 .htaccess

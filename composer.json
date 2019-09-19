@@ -1,0 +1,15 @@
+{
+    "name": "punchout-catalogs/secured-wall",
+    "description": "Punchout Catalog Secure Wall",
+    "license": "proprietary",
+    "require": {
+        "php": ">=7.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "PunchoutCatalog\\SecuredWall\\": "src/PunchoutCatalog/SecuredWall"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
