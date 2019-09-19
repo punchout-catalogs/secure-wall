@@ -1,6 +1,11 @@
-Require:
+Composer dependencies:
 ```
-"illuminate/database": "5.7.*",
+    "require": {
+        "php": ">=7.1",
+        "ext-mcrypt": "*",
+        "illuminate/database": "5.7.*",
+        "illuminate/encryption": "5.7.*"
+    },
 ```
 
 Table to create:
