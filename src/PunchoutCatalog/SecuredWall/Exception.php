@@ -4,7 +4,9 @@ namespace PunchoutCatalog\SecuredWall;
 
 class Exception extends \Exception
 {
-    const EMPTY_ID = 100;
-    const EMPTY_VALUE_ENCODE = 101;
-    const EMPTY_VALUE_DECODE = 201;
+    const EMPTY_SECRET = 0;
+    const EMPTY_DB_PARAM = 100;
+    const EMPTY_ID = 200;
+    const EMPTY_VALUE_ENCODE = 300;
+    const EMPTY_VALUE_DECODE = 400;
 }

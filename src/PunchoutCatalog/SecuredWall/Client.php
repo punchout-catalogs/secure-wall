@@ -4,21 +4,61 @@ namespace PunchoutCatalog\SecuredWall;
 
 class Client
 {
-    static protected $config = [];
+    /** @var array  */
+    protected $config = [];
     
     /** @var Client */
     static protected $instance = null;
     
+    /**
+     * @param array $config
+     *
+     * @return Client
+     * @throws Exception
+     */
     static public function getInstance(array $config = [])
     {
         if (null === static::$instance) {
+            static::validateConfig($config);
             static::$instance = new Client($config);
         }
         return static::$instance;
     }
     
+    /**
+     * @param array $config
+     *
+     * @return bool
+     * @throws Exception
+     */
+    static protected function validateConfig(array $config = [])
+    {
+        if (empty($config['secret'])) {
+            throw new Exception('Empty Secret.', Exception::EMPTY_SECRET);
+        }
+        if (empty($config['db_host']) && empty($config['db_socket'])) {
+            throw new Exception('Empty DB Host and DB Socket.', Exception::EMPTY_DB_PARAM);
+        }
+        if (empty($config['db_name'])) {
+            throw new Exception('Empty DB Name.', Exception::EMPTY_DB_PARAM);
+        }
+        if (empty($config['db_username'])) {
+            throw new Exception('Empty DB Username.', Exception::EMPTY_DB_PARAM);
+        }
+        if (empty($config['db_password'])) {
+            throw new Exception('Empty DB Password.', Exception::EMPTY_DB_PARAM);
+        }
+        return true;
+    }
+    
+    /**
+     * Client constructor.
+     *
+     * @param array $config
+     */
     protected function __construct(array $config = [])
     {
+        $this->config = $config;
     }
     
     /**
