@@ -4,7 +4,9 @@
     "version": "1.0.0",
     "require": {
         "php": ">=7.1",
-        "illuminate/database": "5.7.*"
+        "ext-mcrypt": "*",
+        "illuminate/database": "5.7.*",
+        "illuminate/encryption": "5.7.*"
     },
     "autoload": {
         "psr-4": {
