@@ -2,63 +2,107 @@
 
 namespace PunchoutCatalog\SecuredWall;
 
+use Illuminate\Database\Capsule\Manager as ManagerDB;
+
+/**
+ * Class Client
+ *
+ * @package PunchoutCatalog\SecuredWall
+ */
 class Client
 {
+    protected $table = 'pgw_secured_wall';
+    
+    /** @var string */
+    protected $secret;
+    
     /** @var array  */
-    protected $config = [];
+    protected $dbConfig = [
+        'driver'    => 'mysql',
+        'charset'   => 'utf8',
+        'collation' => 'utf8_unicode_ci',
+        'prefix'    => '',
+    ];
     
     /** @var Client */
     static protected $instance = null;
     
+    /** @var \Illuminate\Database\Capsule\Manager */
+    protected $db;
+    
+    /** @var \Illuminate\Encryption\Encrypter */
+    protected $encryter;
+    
     /**
-     * @param array $config
+     * @param string $secret
+     * @param array $dbConfig
      *
      * @return Client
      * @throws Exception
      */
-    static public function getInstance(array $config = [])
+    static public function getInstance(string $secret, array $dbConfig = [])
     {
         if (null === static::$instance) {
-            static::validateConfig($config);
-            static::$instance = new Client($config);
+            static::validate($secret, $dbConfig);
+            static::$instance = new Client($secret, $dbConfig);
         }
         return static::$instance;
     }
     
     /**
-     * @param array $config
+     * @param string $secret
+     * @param array $dbConfig
      *
      * @return bool
      * @throws Exception
      */
-    static protected function validateConfig(array $config = [])
+    static protected function validate(string $secret, array $dbConfig = [])
     {
-        if (empty($config['secret'])) {
+        if (empty($secret)) {
             throw new Exception('Empty Secret.', Exception::EMPTY_SECRET);
         }
-        if (empty($config['db_host']) && empty($config['db_socket'])) {
+        if (empty($dbConfig)) {
+            throw new Exception('Empty DB Connection.', Exception::EMPTY_DB_PARAM);
+        }
+        if (empty($dbConfig['host']) && empty($config['db']['unix_socket'])) {
             throw new Exception('Empty DB Host and DB Socket.', Exception::EMPTY_DB_PARAM);
         }
-        if (empty($config['db_name'])) {
+        if (empty($dbConfig['database'])) {
             throw new Exception('Empty DB Name.', Exception::EMPTY_DB_PARAM);
         }
-        if (empty($config['db_username'])) {
+        if (empty($dbConfig['username'])) {
             throw new Exception('Empty DB Username.', Exception::EMPTY_DB_PARAM);
         }
-        if (empty($config['db_password'])) {
+        if (empty($dbConfig['password'])) {
             throw new Exception('Empty DB Password.', Exception::EMPTY_DB_PARAM);
         }
         return true;
     }
     
     /**
-     * Client constructor.
+     * @param string $secret
+     * @param array $dbConfig
      *
      * @param array $config
      */
-    protected function __construct(array $config = [])
+    protected function __construct(string $secret, array $dbConfig = [])
     {
-        $this->config = $config;
+        $this->secret = $secret;
+        $this->encryter = new \Illuminate\Encryption\Encrypter($secret, 'AES-256-CBC');
+        $this->dbConfig = array_merge($this->dbConfig, $dbConfig);
+        $this->initDb();
+    }
+    
+    /**
+     * @return $this
+     */
+    protected function initDb()
+    {
+        $this->db = new ManagerDB();
+        $this->db->addConnection($this->dbConfig);
+        //$capsule->setAsGlobal();
+        $this->db->bootEloquent();
+        return $this;
     }
     
     /**
@@ -77,7 +121,7 @@ class Client
             throw new Exception('Empty Secured Wall Value.', Exception::EMPTY_VALUE_ENCODE);
         }
         
-        $value = json_encode($value);
+        $value = $this->encode($value);
         
         return $this->write($id, $value);
     }
@@ -95,9 +139,11 @@ class Client
         }
         
         $value = $this->read($id);
+        if ((false === $value) || ('' === $value) || (null === $value)) {
+            throw new Exception('Requested Key does not exists.', Exception::EMPTY_VALUE);
+        }
         
-        $value = json_decode($value, true);
-        
+        $value = $this->decode($value);
         if ((false === $value) || ('' === $value) || (null === $value)) {
             throw new Exception('Empty Secured Wall Value.', Exception::EMPTY_VALUE_DECODE);
         }
@@ -107,13 +153,37 @@ class Client
     
     /**
      * @param string $id
+     *
+     * @return array|string
+     * @throws Exception
+     */
+    public function exists(string $id)
+    {
+        if ('' === $id) {
+            throw new Exception('Empty Secured Wall ID.', Exception::EMPTY_ID);
+        }
+        
+        $value = $this->read($id);
+        if ((false === $value) || ('' === $value) || (null === $value)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    /**
+     * @param string $id
      * @param string $value
      *
      * @return bool
      */
     protected function write(string $id, string $value)
     {
-        return true;
+        $sql = sprintf("INSERT INTO `%s` (`id`, `value`)", $this->table)
+        . " VALUES (:id, :value)"
+        . " ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)";
+        
+        return $this->getConnection()->insert($sql, ['id' => $id, 'value' => $value]);
     }
     
     /**
@@ -123,6 +193,32 @@ class Client
      */
     protected function read(string $id)
     {
-        return '{"abra" : "abra_value", "test": 99}';
+        /** @var \Illuminate\Support\Collection $result */
+        $result = $this->getConnection()->Table($this->table)
+            ->select('value')
+            ->where('id', $id)
+            ->limit(1)
+            ->pluck('value');
+        
+        $result = $result->first();
+
+        return (null !== $result) ? $result : null;
+    }
+    
+    protected function getConnection()
+    {
+        return $this->db->getConnection();
+    }
+    
+    protected function encode($value)
+    {
+        $value = json_encode($value);
+        return $this->encryter->encrypt($value, false);
+    }
+    
+    protected function decode($value)
+    {
+        $value = $this->encryter->decrypt($value, false);
+        return json_decode($value, true);
     }
 }

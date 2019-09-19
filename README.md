@@ -13,8 +13,9 @@ CREATE TABLE `secured_wall` (
 PHP Example:
 require_once __DIR__ . '/../vendor/autoload.php';
 
+$key = md5('abrakadabra');
 $client = \PunchoutCatalog\SecuredWall\Client::getInstance(
-'abrakadabra',
+$key,
 [
     'host' => '127.0.0.1',
     'port' => '3306',
