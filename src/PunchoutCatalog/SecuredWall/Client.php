@@ -100,8 +100,6 @@ class Client
     {
         $this->db = new ManagerDB();
         $this->db->addConnection($this->dbConfig, 'poc_secure_wall');
-        //$capsule->setAsGlobal();
-        $this->db->bootEloquent();
         return $this;
     }
     
