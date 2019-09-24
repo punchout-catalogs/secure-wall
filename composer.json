@@ -1,7 +1,7 @@
 {
     "name": "punchout-catalogs/secured-wall",
     "description": "Punchout Catalogs Secure Wall",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "require": {
         "php": ">=7.1",
         "ext-mcrypt": "*",
