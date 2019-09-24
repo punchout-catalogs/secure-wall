@@ -64,7 +64,7 @@ class Client
         if (empty($dbConfig)) {
             throw new Exception('Empty DB Connection.', Exception::EMPTY_DB_PARAM);
         }
-        if (empty($dbConfig['host']) && empty($config['unix_socket'])) {
+        if (empty($dbConfig['host']) && empty($dbConfig['unix_socket'])) {
             throw new Exception('Empty DB Host and DB Socket.', Exception::EMPTY_DB_PARAM);
         }
         if (empty($dbConfig['database'])) {
