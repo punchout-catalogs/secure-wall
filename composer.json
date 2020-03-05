@@ -6,7 +6,7 @@
         "php": ">=7.1",
         "ext-mcrypt": "*",
         "illuminate/encryption": "5.7.*",
-        "guzzlehttp/guzzle": "^6.5"
+        "guzzlehttp/guzzle": "^6.3"
     },
     "autoload": {
         "psr-4": {
