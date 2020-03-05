@@ -2,8 +2,6 @@
 
 namespace PunchoutCatalog\SecuredWall;
 
-use Illuminate\Database\Capsule\Manager as ManagerDB;
-
 /**
  * Class Client
  *
@@ -11,141 +9,131 @@ use Illuminate\Database\Capsule\Manager as ManagerDB;
  */
 class Client
 {
-    protected $table = 'pgw_secured_wall';
-    
     /** @var string */
     protected $secret;
-    
-    /** @var array  */
-    protected $dbConfig = [
-        'driver'    => 'mysql',
-        'charset'   => 'utf8',
-        'collation' => 'utf8_unicode_ci',
-        'prefix'    => '',
-    ];
-    
-    /** @var Client */
-    static protected $instance = null;
-    
-    /** @var \Illuminate\Database\Capsule\Manager */
-    protected $db;
-    
+
+    /** @var string */
+    protected $token;
+
+    /** @var string */
+    protected $url;
+
     /** @var \Illuminate\Encryption\Encrypter */
     protected $encryter;
-    
+
+    /** @var \GuzzleHttp\Client */
+    protected $client;
+
+    /** @var Client */
+    static protected $instance = null;
+
     /**
      * @param string $secret
-     * @param array $dbConfig
-     *
+     * @param string $token
+     * @param string $url
+     
      * @return Client
      * @throws Exception
      */
-    static public function getInstance(string $secret, array $dbConfig = [])
+    static public function getInstance($secret, $token, $url)
     {
         if (null === static::$instance) {
-            static::validate($secret, $dbConfig);
-            static::$instance = new Client($secret, $dbConfig);
+            static::validate($secret, $token, $url);
+            static::$instance = new Client($secret, $token, $url);
         }
         return static::$instance;
     }
-    
+
     /**
      * @param string $secret
-     * @param array $dbConfig
+     * @param string $token
+     * @param string $url
      *
      * @return bool
      * @throws Exception
      */
-    static protected function validate(string $secret, array $dbConfig = [])
+    static protected function validate($secret, $token, $url)
     {
         if (empty($secret)) {
             throw new Exception('Empty Secret.', Exception::EMPTY_SECRET);
         }
-        if (empty($dbConfig)) {
-            throw new Exception('Empty DB Connection.', Exception::EMPTY_DB_PARAM);
+        if (empty($token)) {
+            throw new Exception('Empty Token.', Exception::EMPTY_TOKEN);
         }
-        if (empty($dbConfig['host']) && empty($dbConfig['unix_socket'])) {
-            throw new Exception('Empty DB Host and DB Socket.', Exception::EMPTY_DB_PARAM);
-        }
-        if (empty($dbConfig['database'])) {
-            throw new Exception('Empty DB Name.', Exception::EMPTY_DB_PARAM);
-        }
-        if (empty($dbConfig['username'])) {
-            throw new Exception('Empty DB Username.', Exception::EMPTY_DB_PARAM);
-        }
-        if (empty($dbConfig['password'])) {
-            throw new Exception('Empty DB Password.', Exception::EMPTY_DB_PARAM);
+        if (empty($url)) {
+            throw new Exception('Empty Cloud URL.', Exception::EMPTY_CLOUD_URL);
         }
         return true;
     }
-    
+
     /**
      * @param string $secret
-     * @param array $dbConfig
+     * @param string $token
+     * @param string $url
      *
      * @param array $config
      */
-    protected function __construct(string $secret, array $dbConfig = [])
+    protected function __construct(string $secret, string $token, string $url)
     {
+        $p = parse_url($url);
+        
+        if (empty($p['scheme'])) {
+            $url = 'https://' . $url;
+        }
+
         $this->secret = $secret;
+        $this->token = $token;
+        $this->url = rtrim($url, '/') . '/api/v2/wall/';
+
         $this->encryter = new \Illuminate\Encryption\Encrypter($secret, 'AES-256-CBC');
-        $this->dbConfig = array_merge($this->dbConfig, $dbConfig);
-        $this->initDb();
+
+        $this->client = new \GuzzleHttp\Client([
+            'base_uri' => $this->url,
+            'timeout'  => 2.0,
+            'headers' => [
+                'Content-Type'  => 'application/json',
+                'Authorization' => "Bearer {$this->token}",
+            ],
+        ]);
     }
-    
+
     /**
-     * @return $this
-     */
-    protected function initDb()
-    {
-        $this->db = new ManagerDB();
-        $this->db->addConnection($this->dbConfig, 'poc_secure_wall');
-        return $this;
-    }
-    
-    /**
-     * @param string $id
+     * @param array|string $data
      * @param array|string $value
      *
      * @return bool
      * @throws Exception
      */
-    public function set(string $id, $value)
+    public function set($data, $value = null)
     {
-        if ('' === $id) {
-            throw new Exception('Empty Secured Wall ID.', Exception::EMPTY_ID);
+        if (is_array($data)) {
+            $rows = $data;
+        } else {
+            $rows = [$data => $value];
         }
-        if ('' === $value) {
-            throw new Exception('Empty Secured Wall Value.', Exception::EMPTY_VALUE_ENCODE);
-        }
-        
-        $value = $this->encode($value);
-        
-        return $this->write($id, $value);
+
+        return $this->write($rows);
     }
     
     /**
-     * @param string $id
+     * @param string $ids
      *
      * @return array|string
      * @throws Exception
      */
-    public function get(string $id)
+    public function get($ids)
     {
-        if ('' === $id) {
+        if (empty($ids)) {
             throw new Exception('Empty Secured Wall ID.', Exception::EMPTY_ID);
         }
-        
-        $value = $this->read($id);
-        if ((false === $value) || ('' === $value) || (null === $value)) {
-            throw new Exception('Requested Key does not exists.', Exception::EMPTY_VALUE);
+    
+        $ids = is_array($ids) ? $ids : [$ids];
+        $value = $this->read($ids);
+
+        if (!is_array($value) || (count($value) != count($ids))) {
+            throw new Exception('Some of the requested keys do not exists.', Exception::EMPTY_VALUE);
         }
-        
-        $value = $this->decode($value);
-        if ((false === $value) || ('' === $value) || (null === $value)) {
-            throw new Exception('Empty Secured Wall Value.', Exception::EMPTY_VALUE_DECODE);
-        }
-        
+
         return $value;
     }
     
@@ -161,66 +149,79 @@ class Client
             throw new Exception('Empty Secured Wall ID.', Exception::EMPTY_ID);
         }
         
-        $value = $this->read($id);
-        if ((false === $value) || ('' === $value) || (null === $value)) {
-            return false;
-        }
-        
-        return true;
+        $value = $this->read([$id]);
+
+        return !empty($value);
     }
 
+    protected function wrapResult($response)
+    {
+        $message = 'Could not save data in the secured wall.';
+
+        $body = $response->getBody() ? @json_decode($response->getBody(), true) : [];
+        if (!in_array($response->getStatusCode(), [200, 201])) {
+            $message = isset($body['message']) ? $body['message'] : $message;
+            throw new Exception($message, Exception::SAVE_ERROR);
+        }
+    
+        $result = [];
+        foreach ($body as $row) {
+            if (isset($row['code']) && isset($row['value'])) {
+                $row['value'] = $this->decode($row['value']);
+                $result[$row['code']] = $row;
+            }
+        }
+        
+        return $result;
+    }
+    
     /**
-     * @param string $id
-     * @param string $value
+     * @param array $rows
      *
      * @return bool
      */
-    protected function write(string $id, string $value)
+    protected function write(array $rows)
     {
-        $id = $this->toId($id);
+        $body = [];
         
-        $sql = sprintf("INSERT INTO `%s` (`id`, `value`)", $this->table)
-        . " VALUES (:id, :value)"
-        . " ON DUPLICATE KEY UPDATE `value`=VALUES(`value`)";
+        foreach ($rows as $code => $value) {
+            if (empty($code)) {
+                throw new Exception('Empty Secured Wall ID.', Exception::EMPTY_ID);
+            }
+
+            if (empty($value)) {
+                throw new Exception('Empty Secured Wall Value.', Exception::EMPTY_VALUE_ENCODE);
+            }
+
+            $body[] = [
+                "code" => $code,
+                "value" => $value,
+            ];
+        }
         
-        return $this->getConnection()->insert($sql, ['id' => $id, 'value' => $value]);
+        try {
+            $response = $this->client->request('POST', '', ['json' => $body]);
+        } catch (\Exception $e) {
+            throw new Exception('Could not save data in the secured wall.', Exception::SAVE_ERROR);
+        }
+
+        return $this->wrapResult($response);
     }
-    
+
     /**
-     * @param string $id
+     * @param array $ids
      *
      * @return string
      */
-    protected function read(string $id)
+    protected function read(array $ids)
     {
-        $id = $this->toId($id);
-        
-        /** @var \Illuminate\Support\Collection $result */
-        $result = $this->getConnection()->Table($this->table)
-            ->select('value')
-            ->where('id', $id)
-            ->limit(1)
-            ->pluck('value');
-        
-        $result = $result->first();
-
-        return (null !== $result) ? $result : null;
-    }
+        try {
+            $response = $this->client->request('GET', '?code:in='. implode(',', $ids));
+        } catch (\Exception $e) {
+            throw new Exception('Could not read data from the secured wall.', Exception::SAVE_ERROR);
+        }
     
-    protected function toId(string $id)
-    {
-        return md5(trim($id));
-    }
-    
-    protected function getConnection()
-    {
-        return $this->db->getConnection('poc_secure_wall');
-    }
-    
-    protected function encode($value)
-    {
-        $value = json_encode($value);
-        return $this->encryter->encrypt($value, false);
+        return $this->wrapResult($response);
     }
     
     protected function decode($value)

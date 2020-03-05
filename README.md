@@ -3,59 +3,31 @@ Composer dependencies:
     "require": {
         "php": ">=7.1",
         "ext-mcrypt": "*",
-        "illuminate/database": "5.7.*",
-        "illuminate/encryption": "5.7.*"
+        "illuminate/encryption": "5.7.*",
+        "guzzlehttp/guzzle": "^6.5"
     },
 ```
 
-Table to create:
-```
-CREATE TABLE `secured_wall` (
-  `id` varchar(32) NOT NULL COMMENT 'id',
-  `value` text NOT NULL COMMENT 'value',
-  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'created_at',
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'updated_at',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='Punchout Vault Table';
-```
 
 PHP Example:
 ```
+<?php
+
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$key = md5('abrakadabra');
+$key = 'secret-key-to-decode-returned-result';
+$token = '32symbolshere';
+$url = 'http://punchout-cloud-url.com';
 
-$client = \PunchoutCatalog\SecuredWall\Client::getInstance(
-$key,
-[
-    'host' => '127.0.0.1',
-    'port' => '3306',
-    'database' => 'name_db',
-    'username' => 'usr_test',
-    'password' => 'pwd_test',
+$client = \PunchoutCatalog\SecuredWall\Client::getInstance($key, $token, $url);
+
+
+//Save data to the Secured Wall
+$save = $client->set([
+    'test-key1' => 'v1',
+    'test-key2' => 'v2',
+    'test-key3' => 'v3',
 ]);
 
-var_dump($client->exists('test-key-1'));
-var_dump($client->exists('test-key-2'));
-var_dump($client->exists('test-key-3'));
-var_dump($client->exists('test-key-4'));
-
-$client->set('test-key-1', 'test-value-1');
-$client->set('test-key-2', ['test-value-2' => 'test-value-2-array', 'many' => ['element1', 'element2', 'el3' => ['el31', 'el32']]]);
-$client->set('test-key-3', 'test-value-3');
-
-var_dump($client->exists('test-key-1'));
-var_dump($client->exists('test-key-2'));
-var_dump($client->exists('test-key-3'));
-var_dump($client->exists('test-key-4'));
-
-var_dump($client->get('test-key-1'));
-var_dump($client->get('test-key-2'));
-var_dump($client->get('test-key-3'));
-
-try {
-    var_dump($client->get('test-key-4'));
-} catch (\PunchoutCatalog\SecuredWall\Exception $e) {
-    var_dump($e->getMessage());
-}
-```
+//Get data from the Secured Wall
+$res = $client->get(['test-key1', 'test-key2', 'test-key3']);
