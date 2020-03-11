@@ -90,6 +90,7 @@ class Client
         $this->client = new \GuzzleHttp\Client([
             'base_uri' => $this->url,
             'timeout'  => 2.0,
+            'verify'   => false,
             'headers' => [
                 'Content-Type'  => 'application/json',
                 'Authorization' => "Bearer {$this->token}",
